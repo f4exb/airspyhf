@@ -328,14 +328,14 @@ static void convert_samples_float(airspyhf_device_t* device, airspyhf_complex_in
 	device->vec = vec;
 }
 
-static void convert_samples_int16_ndsp(airspyhf_complex_int16_t *src, airspyhf_complex_int16_t *dest, int count)
+static void convert_samples_int16_ndsp(int16_t *src, int16_t *dest, int count)
 {
-    int i;
+    int i,j;
 
-    for (i = 0; i < count; i++)
+    for (i = 0, j = 0; i < count*2;)
     {
-        dest[i].re = src[i].im;
-        dest[i].im = src[i].re;
+        dest[i++] = src[j++ + 1];
+        dest[i++] = src[j++ - 1];
     }
 }
 
@@ -377,7 +377,7 @@ static void* consumer_threadproc(void *arg)
 		switch(device->sample_type)
 		{
 		case AIRSPYHF_SAMPLE_INT16_NDSP_IQ:
-            convert_samples_int16_ndsp(input_samples, (airspyhf_complex_int16_t*) device->output_buffer, sample_count);
+            convert_samples_int16_ndsp((int16_t*) input_samples, (int16_t*) device->output_buffer, sample_count);
 		    break;
 		case AIRSPYHF_SAMPLE_FLOAT32_IQ:
 		default:
