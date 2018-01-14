@@ -86,8 +86,9 @@ enum airspyhf_board_id
 
 typedef enum
 {
-    AIRSPYHF_SAMPLE_FLOAT32_IQ = 0,   /* 2 * 32bit float per sample */
-    AIRSPYHF_SAMPLE_INT16_NDSP_IQ = 1 /* 2 * 16bit int per sample - no DSP processing */
+    AIRSPYHF_SAMPLE_FLOAT32_IQ = 0,    /* 2 * 32bit float per sample */
+    AIRSPYHF_SAMPLE_INT16_NDSP_IQ = 1, /* 2 * 16bit int per sample - no DSP processing */
+    AIRSPYHF_SAMPLE_INT16_IQ = 2       /* 2 * 16bit int per sample - with DSP processing (DC, IQ and LO correction) */
 } airspyhf_sample_type_t;
 
 typedef enum

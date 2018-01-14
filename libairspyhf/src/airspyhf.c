@@ -36,6 +36,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
 #include <math.h>
 
 #include "iqbalancer.h"
+#include "iqconverter_int16.h"
 #include "airspyhf.h"
 #include "airspyhf_commands.h"
 
@@ -117,6 +118,7 @@ struct airspyhf_device
 	volatile int received_buffer_count;
 	void *output_buffer;
 	void* ctx;
+	iqconverter_int16_t *cnv_i;
 	airspyhf_sample_type_t sample_type;
 };
 
@@ -197,6 +199,7 @@ static int allocate_transfers(airspyhf_device_t* const device)
 	    switch (device->sample_type)
 	    {
 	    case AIRSPYHF_SAMPLE_INT16_NDSP_IQ:
+        case AIRSPYHF_SAMPLE_INT16_IQ:
             device->output_buffer = malloc(device->buffer_size);
 	        break;
 	    case AIRSPYHF_SAMPLE_FLOAT32_IQ:
@@ -339,6 +342,19 @@ static void convert_samples_int16_ndsp(int16_t *src, int16_t *dest, int count)
     }
 }
 
+static void convert_samples_int16(airspyhf_device_t* device, int16_t *src, int16_t *dest, int count)
+{
+    int i,j;
+
+    for (i = 0, j = 0; i < count*2;)
+    {
+        dest[i++] = src[j++ + 1];
+        dest[i++] = src[j++ - 1];
+    }
+
+    iqconverter_int16_process(device->cnv_i, dest, count*2);
+}
+
 static void* consumer_threadproc(void *arg)
 {
 	int sample_count;
@@ -379,6 +395,9 @@ static void* consumer_threadproc(void *arg)
 		case AIRSPYHF_SAMPLE_INT16_NDSP_IQ:
             convert_samples_int16_ndsp((int16_t*) input_samples, (int16_t*) device->output_buffer, sample_count);
 		    break;
+        case AIRSPYHF_SAMPLE_INT16_IQ:
+            convert_samples_int16(device, (int16_t*) input_samples, (int16_t*) device->output_buffer, sample_count);
+            break;
 		case AIRSPYHF_SAMPLE_FLOAT32_IQ:
 		default:
 	        convert_samples_float(device, input_samples, (airspyhf_complex_float_t*) device->output_buffer, sample_count);
@@ -925,6 +944,11 @@ static int airspyhf_open_init(airspyhf_device_t** device, uint64_t serial_number
 	}
 
 	iq_balancer_init(&lib_device->iq_balancer);
+
+	lib_device->cnv_i = (iqconverter_int16_t *) malloc(sizeof(iqconverter_int16_t));
+	lib_device->cnv_i->iRange = 0;
+	lib_device->cnv_i->qRange = 0;
+	lib_device->cnv_i->imbalance = 0;
 
 	*device = lib_device;
 
