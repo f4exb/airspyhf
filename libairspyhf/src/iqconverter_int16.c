@@ -16,7 +16,7 @@
 
 #include "iqconverter_int16.h"
 
-void iqconverter_int16_process(iqconverter_int16_t *cnv, int16_t *samples, int len)
+void iqconverter_int16_process(iqconverter_int16_t *cnv, int16_t *src, int16_t *dest, int len)
 {
     int iMin = 0;
     int iMax = 0;
@@ -36,29 +36,29 @@ void iqconverter_int16_process(iqconverter_int16_t *cnv, int16_t *samples, int l
         // IQ imbalance
         if (i != 0)
         {
-            if (samples[i] < iMin) {
-                iMin = samples[i];
-            } else if (samples[i] > iMax) {
-                iMax = samples[i];
+            if (src[i+1] < iMin) {
+                iMin = src[i+1];
+            } else if (src[i+1] > iMax) {
+                iMax = src[i+1];
             }
 
-            if (samples[i+1] < qMin) {
-                qMin = samples[i+1];
-            } else if (samples[i+1] > qMax) {
-                qMax = samples[i+1];
+            if (src[i] < qMin) {
+                qMin = src[i];
+            } else if (src[i] > qMax) {
+                qMax = src[i];
             }
         }
         else
         {
-            iMin = samples[i];
-            iMax = samples[i];
-            qMin = samples[i+1];
-            qMax = samples[i+1];
+            iMin = src[i+1];
+            iMax = src[i+1];
+            qMin = src[i];
+            qMax = src[i];
         }
 
         // DC removal
-        io += samples[i];
-        qo += samples[i+1];
+        io += src[i+1];
+        qo += src[i];
     }
 
     // sliding average (el cheapo again) for IQ imbalance
@@ -75,11 +75,11 @@ void iqconverter_int16_process(iqconverter_int16_t *cnv, int16_t *samples, int l
     cnv->iOffset = (15.0 * cnv->iOffset + (double)io / count) / 16.0;
     cnv->qOffset = (15.0 * cnv->qOffset + (double)qo / count) / 16.0;
 
-    // correct imbalance and convert back to signed int 16
+    // correct DC offset and IQ imbalance and convert back to signed int 16 with the I/Q inversion
     for (i = 0; i < len-1; i += 2)
     {
-        samples[i] = samples[i] - iCorr;
-        samples[i+1] = ((samples[i+1] * cnv->imbalance) >> 16) - qCorr;
+        dest[i] = src[i+1] - iCorr;
+        dest[i+1] = ((src[i] * cnv->imbalance) >> 16) - qCorr;
     }
 }
 

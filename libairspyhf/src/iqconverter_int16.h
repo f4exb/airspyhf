@@ -30,7 +30,7 @@ typedef struct {
 /**
  * len is in number of int16_t samples
  */
-void iqconverter_int16_process(iqconverter_int16_t *cnv, int16_t *samples, int len);
+void iqconverter_int16_process(iqconverter_int16_t *cnv, int16_t *src, int16_t *dest, int len);
 
 
 #endif /* LIBAIRSPYHF_SRC_IQCONVERTER_INT16_H_ */

@@ -342,19 +342,6 @@ static void convert_samples_int16_ndsp(int16_t *src, int16_t *dest, int count)
     }
 }
 
-static void convert_samples_int16(airspyhf_device_t* device, int16_t *src, int16_t *dest, int count)
-{
-    int i,j;
-
-    for (i = 0, j = 0; i < count*2;)
-    {
-        dest[i++] = src[j++ + 1];
-        dest[i++] = src[j++ - 1];
-    }
-
-    iqconverter_int16_process(device->cnv_i, dest, count*2);
-}
-
 static void* consumer_threadproc(void *arg)
 {
 	int sample_count;
@@ -396,7 +383,7 @@ static void* consumer_threadproc(void *arg)
             convert_samples_int16_ndsp((int16_t*) input_samples, (int16_t*) device->output_buffer, sample_count);
 		    break;
         case AIRSPYHF_SAMPLE_INT16_IQ:
-            convert_samples_int16(device, (int16_t*) input_samples, (int16_t*) device->output_buffer, sample_count);
+            iqconverter_int16_process(device->cnv_i, (int16_t*) input_samples, (int16_t*) device->output_buffer, sample_count*2);
             break;
 		case AIRSPYHF_SAMPLE_FLOAT32_IQ:
 		default:
@@ -1139,14 +1126,13 @@ int ADDCALL airspyhf_stop(airspyhf_device_t* device)
 int ADDCALL airspyhf_set_freq(airspyhf_device_t* device, const uint32_t freq_hz)
 {
 	const int tuning_alignment = 1000;
-	const int if_shift = 0; // was 5000
 	const uint32_t lo_low_khz = 200;
 
 	int result;
 	uint8_t buf[4];
 
 	uint32_t adjusted_freq_hz = (uint32_t) ((int64_t) freq_hz * (int64_t) (1000000000LL + device->calibration_ppb) / 1000000000LL);
-	uint32_t freq_khz = MAX(lo_low_khz, (adjusted_freq_hz + if_shift + tuning_alignment / 2) / tuning_alignment);
+	uint32_t freq_khz = MAX(lo_low_khz, (adjusted_freq_hz + tuning_alignment / 2) / tuning_alignment);
 
 	if (device->freq_khz != freq_khz)
 	{
