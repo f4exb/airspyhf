@@ -14,7 +14,30 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.          //
 ///////////////////////////////////////////////////////////////////////////////////
 
+#include <math.h>
 #include "iqconverter_int16.h"
+
+const int ncoTableSize = 76800;
+
+static int nco_next_phase(iqconverter_int16_t *cnv)
+{
+    cnv->ncoPhase += cnv->ncoPhaseIncrement;
+    while(cnv->ncoPhase >= ncoTableSize)
+        cnv->ncoPhase -= ncoTableSize;
+    while(cnv->ncoPhase < 0)
+        cnv->ncoPhase += ncoTableSize;
+    return (int) cnv->ncoPhase;
+}
+
+static void nco_multiply(iqconverter_int16_t *cnv, int16_t* xi, int16_t *xq)
+{
+    int phase = nco_next_phase(cnv);
+    int16_t oi = cnv->ncoTable[phase];
+    int16_t oq = cnv->ncoTable[(phase + ncoTableSize / 4) % ncoTableSize];
+    int16_t yi = *xi;
+    *xi = (*xi*oi - *xq*oq) >> 15;
+    *xq =  (yi*oq + *xq*oi) >> 15;
+}
 
 void iqconverter_int16_process(iqconverter_int16_t *cnv, int16_t *src, int16_t *dest, int len)
 {
@@ -75,11 +98,14 @@ void iqconverter_int16_process(iqconverter_int16_t *cnv, int16_t *src, int16_t *
     cnv->iOffset = (15.0 * cnv->iOffset + (double)io / count) / 16.0;
     cnv->qOffset = (15.0 * cnv->qOffset + (double)qo / count) / 16.0;
 
-    // correct DC offset and IQ imbalance and convert back to signed int 16 with the I/Q inversion
+    // correct DC offset, IQ imbalance and possibly LO trimmimg with NCO and convert back to signed int 16 with the I/Q inversion
     for (i = 0; i < len-1; i += 2)
     {
         dest[i] = src[i+1] - iCorr;
         dest[i+1] = ((src[i] * cnv->imbalance) >> 16) - qCorr;
+
+        if (cnv->freq_shift != 0) {
+            nco_multiply(cnv, &dest[i], &dest[i+1]);
+        }
     }
 }
-

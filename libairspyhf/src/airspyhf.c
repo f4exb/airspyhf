@@ -923,6 +923,14 @@ static int airspyhf_open_init(airspyhf_device_t** device, uint64_t serial_number
 	lib_device->cnv_i->iRange = 0;
 	lib_device->cnv_i->qRange = 0;
 	lib_device->cnv_i->imbalance = 0;
+	lib_device->cnv_i->ncoPhase = 0.0f;
+	lib_device->cnv_i->ncoPhaseIncrement = 0.0f;
+	lib_device->cnv_i->freq_shift = 0;
+	lib_device->cnv_i->ncoTable = (int16_t *) malloc(ncoTableSize*sizeof(int16_t));
+
+    for(int i = 0; i < ncoTableSize; i++) {
+        lib_device->cnv_i->ncoTable[i] = cos((2.0 * M_PI * i) / (float) ncoTableSize)*32768;
+    }
 
 	*device = lib_device;
 
@@ -968,6 +976,8 @@ int ADDCALL airspyhf_close(airspyhf_device_t* device)
 		airspyhf_open_exit(device);
 		free_transfers(device);
 		free(device->supported_samplerates);
+		free(device->cnv_i->ncoTable);
+		free(device->cnv_i);
 		free(device);
 	}
 
@@ -1148,6 +1158,8 @@ int ADDCALL airspyhf_set_freq(airspyhf_device_t* device, const uint32_t freq_hz)
 
 	device->freq_hz = freq_hz;
 	device->freq_shift = adjusted_freq_hz - freq_khz * 1000;
+	device->cnv_i->freq_shift = device->freq_shift;
+	device->cnv_i->ncoPhaseIncrement = (device->freq_shift * ncoTableSize) / (float) device->current_samplerate;
 
 	return AIRSPYHF_SUCCESS;
 }

@@ -19,12 +19,18 @@
 
 #include <stdint.h>
 
+extern const int ncoTableSize;
+
 typedef struct {
     int32_t iRange;
     int32_t qRange;
     int32_t imbalance;
     double iOffset;
     double qOffset;
+    int16_t *ncoTable;
+    float ncoPhase;
+    float ncoPhaseIncrement;
+    int32_t freq_shift; //!< frequency shift in Hz from nearest kHz used to drive NCO
 } iqconverter_int16_t;
 
 /**
