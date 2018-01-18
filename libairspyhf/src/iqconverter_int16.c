@@ -17,7 +17,7 @@
 #include <math.h>
 #include "iqconverter_int16.h"
 
-const int ncoTableSize = 76800;
+const int ncoTableSize = 768000;
 
 static int nco_next_phase(iqconverter_int16_t *cnv)
 {

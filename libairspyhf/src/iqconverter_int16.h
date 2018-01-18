@@ -28,8 +28,8 @@ typedef struct {
     double iOffset;
     double qOffset;
     int16_t *ncoTable;
-    float ncoPhase;
-    float ncoPhaseIncrement;
+    int ncoPhase;
+    int ncoPhaseIncrement;
     int32_t freq_shift; //!< frequency shift in Hz from nearest kHz used to drive NCO
 } iqconverter_int16_t;
 

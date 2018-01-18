@@ -1159,7 +1159,7 @@ int ADDCALL airspyhf_set_freq(airspyhf_device_t* device, const uint32_t freq_hz)
 	device->freq_hz = freq_hz;
 	device->freq_shift = adjusted_freq_hz - freq_khz * 1000;
 	device->cnv_i->freq_shift = device->freq_shift;
-	device->cnv_i->ncoPhaseIncrement = (device->freq_shift * ncoTableSize) / (float) device->current_samplerate;
+	device->cnv_i->ncoPhaseIncrement = roundf((device->freq_shift * ncoTableSize) / (float) device->current_samplerate);
 
 	return AIRSPYHF_SUCCESS;
 }
